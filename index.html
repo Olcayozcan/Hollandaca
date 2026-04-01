@@ -1,0 +1,752 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Nederlands">
+<meta name="theme-color" content="#000008">
+<link rel="manifest" href="manifest.json">
+<title>Nederlands</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&family=Exo+2:ital,wght@0,300;0,400;0,600;1,300&display=swap');
+
+:root {
+  --bg: #00000a;
+  --cyan: #00fff0;
+  --cyan-glow: rgba(0,255,240,0.5);
+  --cyan-dim: rgba(0,255,240,0.07);
+  --magenta: #ff00cc;
+  --mag-glow: rgba(255,0,204,0.5);
+  --mag-dim: rgba(255,0,204,0.07);
+  --green: #00ff88;
+  --grn-glow: rgba(0,255,136,0.5);
+  --grn-dim: rgba(0,255,136,0.07);
+  --amber: #ffaa00;
+  --text: #dffffe;
+  --muted: rgba(223,255,254,0.5);
+  --hint: rgba(223,255,254,0.22);
+  --safe-top: env(safe-area-inset-top, 48px);
+  --safe-bottom: env(safe-area-inset-bottom, 20px);
+}
+
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+
+html,body{
+  height:100%;background:var(--bg);color:var(--text);
+  font-family:'Exo 2',sans-serif;overflow:hidden;
+  -webkit-font-smoothing:antialiased;
+}
+
+/* ── ANIMATED BG ── */
+.bg-layer{position:fixed;inset:0;pointer-events:none;z-index:0;}
+
+.grid{
+  background-image:
+    linear-gradient(rgba(0,255,240,0.035) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(0,255,240,0.035) 1px,transparent 1px);
+  background-size:44px 44px;
+  animation:gridshift 20s linear infinite;
+  width:100%;height:100%;
+}
+@keyframes gridshift{0%{background-position:0 0;}100%{background-position:44px 44px;}}
+
+.horizon{
+  position:absolute;bottom:0;left:0;right:0;height:45%;
+  background:linear-gradient(transparent,rgba(0,255,240,0.04) 40%,rgba(255,0,204,0.06));
+}
+
+.vlines{
+  position:absolute;bottom:0;left:50%;transform:translateX(-50%);
+  width:200%;height:50%;
+  background: repeating-linear-gradient(
+    90deg,
+    transparent,transparent 40px,
+    rgba(0,255,240,0.06) 40px,rgba(0,255,240,0.06) 41px
+  );
+  transform-origin:bottom center;
+  transform:perspective(300px) rotateX(60deg) translateX(-25%);
+}
+
+.scanline{
+  position:fixed;top:0;left:0;right:0;height:3px;
+  background:linear-gradient(90deg,transparent 0%,var(--cyan) 40%,var(--magenta) 60%,transparent 100%);
+  animation:scan 6s linear infinite;opacity:0.25;z-index:99;pointer-events:none;
+}
+@keyframes scan{0%{top:-3px;}100%{top:100%;}]
+
+.corner{position:fixed;width:28px;height:28px;pointer-events:none;z-index:2;}
+.corner.tl{top:calc(var(--safe-top) + 4px);left:8px;border-top:1.5px solid var(--cyan);border-left:1.5px solid var(--cyan);opacity:0.4;}
+.corner.tr{top:calc(var(--safe-top) + 4px);right:8px;border-top:1.5px solid var(--magenta);border-right:1.5px solid var(--magenta);opacity:0.4;}
+.corner.bl{bottom:calc(var(--safe-bottom) + 4px);left:8px;border-bottom:1.5px solid var(--cyan);border-left:1.5px solid var(--cyan);opacity:0.4;}
+.corner.br{bottom:calc(var(--safe-bottom) + 4px);right:8px;border-bottom:1.5px solid var(--magenta);border-right:1.5px solid var(--magenta);opacity:0.4;}
+
+/* ── APP ── */
+#app{position:relative;z-index:1;height:100%;display:flex;flex-direction:column;padding-top:var(--safe-top);padding-bottom:var(--safe-bottom);}
+.screen{display:none;flex-direction:column;height:100%;}
+.screen.active{display:flex;}
+
+/* ── TOPBAR ── */
+.topbar{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:10px 20px 8px;flex-shrink:0;
+  border-bottom:1px solid rgba(0,255,240,0.1);
+}
+.app-title{
+  font-family:'Orbitron',monospace;font-size:19px;font-weight:900;
+  letter-spacing:5px;text-transform:uppercase;
+  background:linear-gradient(90deg,var(--cyan),var(--magenta));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  filter:drop-shadow(0 0 8px var(--cyan-glow));
+}
+.topright{display:flex;align-items:center;gap:8px;}
+.notif-btn{
+  width:30px;height:30px;border-radius:50%;
+  border:1px solid rgba(0,255,240,0.2);background:var(--cyan-dim);
+  display:flex;align-items:center;justify-content:center;
+  cursor:pointer;font-size:14px;transition:all 0.2s;
+}
+.notif-btn.active{border-color:rgba(0,255,240,0.5);background:rgba(0,255,240,0.12);}
+.session-pill{
+  font-family:'Share Tech Mono',monospace;font-size:11px;
+  color:var(--cyan);background:var(--cyan-dim);
+  padding:4px 12px;border:1px solid rgba(0,255,240,0.18);
+  clip-path:polygon(8px 0%,100% 0%,calc(100% - 8px) 100%,0% 100%);
+  letter-spacing:1px;
+}
+
+/* ── STATS ── */
+.stats-row{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:8px 18px;flex-shrink:0;}
+.stat-box{
+  background:var(--cyan-dim);border:1px solid rgba(0,255,240,0.1);
+  padding:8px 4px;text-align:center;
+  clip-path:polygon(6px 0%,100% 0%,calc(100% - 6px) 100%,0% 100%);
+  position:relative;overflow:hidden;
+}
+.stat-box::after{
+  content:'';position:absolute;bottom:0;left:0;right:0;height:1px;
+  background:linear-gradient(90deg,transparent,currentColor,transparent);
+  opacity:0.3;
+}
+.stat-num{font-family:'Orbitron',monospace;font-size:22px;font-weight:700;line-height:1;transition:all 0.3s;}
+.stat-num.c-cyan{color:var(--cyan);text-shadow:0 0 10px var(--cyan-glow);}
+.stat-num.c-grn{color:var(--green);text-shadow:0 0 10px var(--grn-glow);}
+.stat-num.c-mag{color:var(--magenta);text-shadow:0 0 10px var(--mag-glow);}
+.stat-label{font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--muted);margin-top:3px;letter-spacing:.12em;text-transform:uppercase;}
+
+/* ── PROGRESS ── */
+.progress-wrap{padding:8px 18px 4px;flex-shrink:0;}
+.progress-header{display:flex;justify-content:space-between;margin-bottom:5px;font-family:'Share Tech Mono',monospace;font-size:11px;color:var(--muted);}
+.progress-track{height:5px;background:rgba(0,255,240,0.06);border:1px solid rgba(0,255,240,0.08);position:relative;}
+.progress-fill{
+  height:100%;transition:width 0.6s cubic-bezier(.4,0,.2,1);position:relative;
+  background:linear-gradient(90deg,var(--cyan),var(--green));
+  box-shadow:0 0 10px var(--cyan-glow);
+}
+.progress-fill::after{content:'';position:absolute;right:-1px;top:-3px;width:3px;height:11px;background:white;box-shadow:0 0 8px white,0 0 16px var(--cyan);}
+
+/* ── GOAL BANNER ── */
+.goal-banner{
+  margin:4px 18px 0;background:var(--grn-dim);
+  border:1px solid rgba(0,255,136,0.2);padding:7px;
+  font-family:'Share Tech Mono',monospace;font-size:11px;
+  color:var(--green);text-align:center;letter-spacing:.08em;
+  display:none;text-shadow:0 0 8px var(--grn-glow);
+  animation:glitch 4s infinite;
+}
+.goal-banner.show{display:block;}
+@keyframes glitch{
+  0%,90%,100%{clip-path:none;transform:none;}
+  91%{clip-path:rect(0 100% 40% 0);transform:translateX(-2px);}
+  93%{clip-path:rect(40% 100% 80% 0);transform:translateX(2px);}
+  95%{clip-path:none;transform:none;}
+}
+
+/* ── CARD ── */
+.card-area{flex:1;display:flex;align-items:center;justify-content:center;padding:10px 16px;position:relative;}
+
+.card{
+  width:100%;max-width:390px;
+  background:linear-gradient(160deg,rgba(0,20,30,0.95),rgba(10,0,20,0.98));
+  border-radius:3px;padding:28px 22px;position:relative;
+  cursor:pointer;will-change:transform;min-height:260px;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  transition:transform 0.08s ease;
+}
+
+/* animated border */
+.card::before{
+  content:'';position:absolute;inset:-1px;border-radius:3px;z-index:-1;
+  background:linear-gradient(var(--card-angle,0deg),var(--cyan),var(--magenta),var(--cyan));
+  animation:rotateBorder 4s linear infinite;
+  background-size:200% 200%;
+}
+@keyframes rotateBorder{0%{--card-angle:0deg}100%{--card-angle:360deg}}
+
+.card::after{content:'';position:absolute;inset:1px;border-radius:2px;background:linear-gradient(160deg,rgba(0,20,30,0.97),rgba(10,0,20,0.99));z-index:-1;}
+
+.card.dragging{transition:none;}
+
+/* card inner decorations */
+.card-tag-row{position:absolute;top:12px;left:14px;right:14px;display:flex;justify-content:space-between;align-items:center;}
+.card-block-tag{font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--cyan);letter-spacing:.15em;opacity:0.6;}
+.card-counter{font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--hint);}
+
+.card-dutch{
+  font-family:'Orbitron',monospace;font-size:28px;font-weight:700;
+  color:var(--cyan);text-align:center;line-height:1.25;letter-spacing:1px;
+  text-shadow:0 0 20px var(--cyan-glow),0 0 40px rgba(0,255,240,0.15);
+  margin-bottom:8px;
+}
+
+.card-pron{font-family:'Share Tech Mono',monospace;font-size:12px;color:var(--muted);text-align:center;letter-spacing:.04em;}
+
+.tap-hint{
+  margin-top:22px;font-family:'Share Tech Mono',monospace;font-size:11px;
+  color:var(--hint);display:flex;align-items:center;gap:6px;letter-spacing:.1em;
+  animation:blink 2s step-end infinite;
+}
+@keyframes blink{0%,100%{opacity:1;}50%{opacity:0.2;}}
+
+.card-divider{
+  width:100%;height:1px;margin:18px 0;
+  background:linear-gradient(90deg,transparent,rgba(0,255,240,0.4),rgba(255,0,204,0.4),transparent);
+}
+
+.card-english{font-family:'Exo 2',sans-serif;font-size:20px;font-weight:600;color:var(--text);text-align:center;margin-bottom:6px;}
+.card-turkish{
+  font-family:'Share Tech Mono',monospace;font-size:13px;
+  color:var(--magenta);text-align:center;margin-bottom:14px;
+  text-shadow:0 0 8px var(--mag-glow);
+}
+.card-example{font-family:'Exo 2',sans-serif;font-size:12px;font-style:italic;color:var(--hint);text-align:center;line-height:1.7;}
+
+/* swipe overlays */
+.swipe-overlay{
+  position:absolute;top:14px;padding:5px 12px;
+  font-family:'Orbitron',monospace;font-size:10px;font-weight:700;
+  opacity:0;pointer-events:none;letter-spacing:2px;
+  clip-path:polygon(6px 0%,100% 0%,calc(100% - 6px) 100%,0% 100%);
+}
+.overlay-right{right:14px;background:var(--grn-dim);color:var(--green);border:1px solid rgba(0,255,136,0.3);text-shadow:0 0 8px var(--grn-glow);}
+.overlay-left{left:14px;background:var(--mag-dim);color:var(--magenta);border:1px solid rgba(255,0,204,0.3);text-shadow:0 0 8px var(--mag-glow);}
+
+/* ── GUIDE & BUTTONS ── */
+.swipe-guide{display:flex;justify-content:space-between;padding:0 22px;flex-shrink:0;margin-bottom:6px;}
+.guide-item{font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--hint);letter-spacing:.04em;display:flex;align-items:center;gap:5px;}
+.guide-bar{width:18px;height:2px;}
+.guide-bar.m{background:var(--magenta);box-shadow:0 0 4px var(--mag-glow);}
+.guide-bar.g{background:var(--green);box-shadow:0 0 4px var(--grn-glow);}
+
+.btn-row{display:flex;gap:10px;padding:0 18px 12px;flex-shrink:0;}
+.btn{
+  flex:1;padding:14px;border:1px solid;background:transparent;
+  font-family:'Orbitron',monospace;font-size:11px;font-weight:700;
+  cursor:pointer;letter-spacing:2px;
+  clip-path:polygon(8px 0%,100% 0%,calc(100% - 8px) 100%,0% 100%);
+  transition:all .15s;position:relative;overflow:hidden;
+}
+.btn::after{content:'';position:absolute;inset:0;opacity:0;transition:opacity .2s;}
+.btn:active{transform:scale(0.96);}
+.btn:active::after{opacity:1;}
+.btn-wrong{border-color:rgba(255,0,204,0.35);color:var(--magenta);text-shadow:0 0 8px var(--mag-glow);}
+.btn-wrong::after{background:var(--mag-dim);}
+.btn-right{border-color:rgba(0,255,136,0.35);color:var(--green);text-shadow:0 0 8px var(--grn-glow);}
+.btn-right::after{background:var(--grn-dim);}
+
+/* ── DONE SCREEN ── */
+#screen-done{align-items:center;justify-content:center;padding:36px 22px;text-align:center;}
+.done-glyph{
+  font-family:'Orbitron',monospace;font-size:52px;font-weight:900;
+  color:var(--cyan);text-shadow:0 0 30px var(--cyan-glow),0 0 60px rgba(0,255,240,0.2);
+  margin-bottom:14px;animation:pulse 2s ease-in-out infinite;
+}
+@keyframes pulse{0%,100%{text-shadow:0 0 20px var(--cyan-glow);}50%{text-shadow:0 0 50px var(--cyan-glow),0 0 100px rgba(0,255,240,0.25);}}
+.done-title{font-family:'Orbitron',monospace;font-size:22px;font-weight:900;letter-spacing:5px;color:var(--cyan);margin-bottom:6px;text-shadow:0 0 16px var(--cyan-glow);}
+.done-sub{font-family:'Share Tech Mono',monospace;font-size:12px;color:var(--muted);margin-bottom:26px;line-height:1.8;letter-spacing:.05em;}
+.done-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;width:100%;margin-bottom:28px;}
+.done-stat{background:var(--cyan-dim);border:1px solid rgba(0,255,240,0.1);padding:14px 6px;clip-path:polygon(8px 0%,100% 0%,calc(100% - 8px) 100%,0% 100%);}
+.done-stat-num{font-family:'Orbitron',monospace;font-size:24px;font-weight:700;}
+.done-stat-label{font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--muted);margin-top:4px;letter-spacing:.12em;text-transform:uppercase;}
+
+.btn-done{
+  width:100%;padding:15px;background:transparent;
+  font-family:'Orbitron',monospace;font-size:11px;font-weight:700;
+  cursor:pointer;letter-spacing:3px;margin-bottom:10px;
+  clip-path:polygon(10px 0%,100% 0%,calc(100% - 10px) 100%,0% 100%);
+  transition:all .15s;
+}
+.btn-done:active{transform:scale(0.97);}
+.btn-done.primary{border:1px solid rgba(0,255,240,0.35);color:var(--cyan);text-shadow:0 0 8px var(--cyan-glow);}
+.btn-done.secondary{border:1px solid rgba(223,255,254,0.1);color:var(--muted);}
+
+/* ── NOTIF MODAL ── */
+.modal-bg{
+  position:fixed;inset:0;background:rgba(0,0,15,0.85);z-index:200;
+  display:flex;align-items:flex-end;justify-content:center;
+  padding-bottom:var(--safe-bottom);
+  opacity:0;pointer-events:none;transition:opacity .25s;
+}
+.modal-bg.show{opacity:1;pointer-events:all;}
+.modal{
+  width:100%;max-width:440px;
+  background:linear-gradient(160deg,rgba(0,20,30,0.98),rgba(10,0,25,0.99));
+  border:1px solid rgba(0,255,240,0.2);border-radius:3px 3px 0 0;
+  padding:28px 24px;
+  transform:translateY(20px);transition:transform .25s;
+}
+.modal-bg.show .modal{transform:translateY(0);}
+.modal-title{font-family:'Orbitron',monospace;font-size:15px;font-weight:700;color:var(--cyan);letter-spacing:3px;margin-bottom:8px;text-shadow:0 0 12px var(--cyan-glow);}
+.modal-sub{font-family:'Share Tech Mono',monospace;font-size:12px;color:var(--muted);line-height:1.7;margin-bottom:20px;}
+.modal-times{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:20px;}
+.time-btn{
+  padding:12px 6px;background:var(--cyan-dim);
+  border:1px solid rgba(0,255,240,0.15);
+  font-family:'Share Tech Mono',monospace;font-size:13px;
+  color:var(--muted);cursor:pointer;text-align:center;
+  clip-path:polygon(6px 0%,100% 0%,calc(100% - 6px) 100%,0% 100%);
+  transition:all .15s;
+}
+.time-btn.sel{border-color:rgba(0,255,240,0.5);color:var(--cyan);background:rgba(0,255,240,0.12);text-shadow:0 0 8px var(--cyan-glow);}
+.modal-btns{display:flex;gap:10px;}
+.modal-btn{
+  flex:1;padding:13px;background:transparent;
+  font-family:'Orbitron',monospace;font-size:11px;font-weight:700;
+  cursor:pointer;letter-spacing:2px;
+  clip-path:polygon(8px 0%,100% 0%,calc(100% - 8px) 100%,0% 100%);
+  transition:all .15s;
+}
+.modal-btn.confirm{border:1px solid rgba(0,255,240,0.35);color:var(--cyan);}
+.modal-btn.cancel{border:1px solid rgba(223,255,254,0.1);color:var(--muted);}
+
+/* number pop animation */
+@keyframes numPop{0%{transform:scale(1.4);opacity:0.5;}100%{transform:scale(1);opacity:1;}}
+.pop{animation:numPop .3s ease-out;}
+</style>
+</head>
+<body>
+
+<!-- bg layers -->
+<div class="bg-layer"><div class="grid"></div><div class="horizon"></div><div class="vlines"></div></div>
+<div class="scanline"></div>
+<div class="corner tl"></div><div class="corner tr"></div>
+<div class="corner bl"></div><div class="corner br"></div>
+
+<div id="app">
+
+  <!-- STUDY -->
+  <div id="screen-study" class="screen active">
+    <div class="topbar">
+      <div class="app-title">NEDER·LANDS</div>
+      <div class="topright">
+        <div class="notif-btn" id="notif-btn" onclick="openNotifModal()" title="Hatırlatma">🔔</div>
+        <div class="session-pill" id="session-tag">GÜN_01</div>
+      </div>
+    </div>
+
+    <div class="stats-row">
+      <div class="stat-box">
+        <div class="stat-num c-cyan" id="stat-done">0</div>
+        <div class="stat-label">bugün</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-num c-grn" id="stat-known">0</div>
+        <div class="stat-label">biliyor</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-num c-mag" id="stat-learn">0</div>
+        <div class="stat-label">tekrar</div>
+      </div>
+    </div>
+
+    <div class="progress-wrap">
+      <div class="progress-header">
+        <span id="progress-label">0 / 10 HEDEF</span>
+        <span id="total-label">140 KELİME</span>
+      </div>
+      <div class="progress-track">
+        <div class="progress-fill" id="progress-fill" style="width:0%"></div>
+      </div>
+    </div>
+
+    <div class="goal-banner" id="goal-banner">// GÜNLÜK HEDEF TAMAMLANDI — SİSTEM GÜNCELLENDİ</div>
+
+    <div class="card-area">
+      <div class="card" id="flashcard">
+        <div class="swipe-overlay overlay-left" id="overlay-left">TEKRAR</div>
+        <div class="swipe-overlay overlay-right" id="overlay-right">BİLİYORUM</div>
+        <div class="card-tag-row">
+          <div class="card-block-tag" id="card-block"></div>
+          <div class="card-counter" id="card-counter"></div>
+        </div>
+        <div class="card-dutch" id="card-dutch"></div>
+        <div class="card-pron" id="card-pron"></div>
+        <div id="tap-hint-el" class="tap-hint">[ DOKUNARAK GÖR ]</div>
+        <div id="card-answer" style="display:none;width:100%;text-align:center;">
+          <div class="card-divider"></div>
+          <div class="card-english" id="card-english"></div>
+          <div class="card-turkish" id="card-turkish"></div>
+          <div class="card-example" id="card-example"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="swipe-guide">
+      <div class="guide-item"><div class="guide-bar m"></div> sola → tekrar</div>
+      <div class="guide-item">sağa → biliyorum <div class="guide-bar g"></div></div>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-wrong" onclick="swipe('left')">TEKRAR</button>
+      <button class="btn btn-right" onclick="swipe('right')">BİLİYORUM</button>
+    </div>
+  </div>
+
+  <!-- DONE -->
+  <div id="screen-done" class="screen">
+    <div class="done-glyph">◈</div>
+    <div class="done-title">TAMAMLANDI</div>
+    <div class="done-sub" id="done-sub"></div>
+    <div class="done-stats">
+      <div class="done-stat">
+        <div class="done-stat-num c-cyan" style="color:var(--cyan);text-shadow:0 0 12px var(--cyan-glow)" id="done-total">0</div>
+        <div class="done-stat-label">toplam</div>
+      </div>
+      <div class="done-stat">
+        <div class="done-stat-num" style="color:var(--green);text-shadow:0 0 12px var(--grn-glow)" id="done-known">0</div>
+        <div class="done-stat-label">biliyor</div>
+      </div>
+      <div class="done-stat">
+        <div class="done-stat-num" style="color:var(--magenta);text-shadow:0 0 12px var(--mag-glow)" id="done-learn">0</div>
+        <div class="done-stat-label">tekrar</div>
+      </div>
+    </div>
+    <button class="btn-done primary" onclick="continueStudy()">// DEVAM ET</button>
+    <button class="btn-done secondary" onclick="resetDay()">// GÜNÜ SIFIRLA</button>
+  </div>
+
+</div>
+
+<!-- NOTIFICATION MODAL -->
+<div class="modal-bg" id="modal-bg">
+  <div class="modal">
+    <div class="modal-title">// HATIRLATMA</div>
+    <div class="modal-sub">Her gün seni uyaralım mı? Hangi saatte bildirim gönderelim?</div>
+    <div class="modal-times" id="time-grid"></div>
+    <div class="modal-btns">
+      <button class="modal-btn confirm" onclick="saveNotif()">KAYDET</button>
+      <button class="modal-btn cancel" onclick="closeNotifModal()">İPTAL</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const WORDS=[
+  {block:"1A",dutch:"Hallo",pron:"HAH-loh",english:"Hello",turkish:"Merhaba",example:"Hallo, hoe gaat het?"},
+  {block:"1A",dutch:"Goedemorgen",pron:"KHU-duh-MOR-khun",english:"Good morning",turkish:"Günaydın",example:"Goedemorgen, heb je even tijd?"},
+  {block:"1A",dutch:"Goedemiddag",pron:"KHU-duh-MI-dakh",english:"Good afternoon",turkish:"Tünaydın",example:"Goedemiddag, ik kom voor een afspraak."},
+  {block:"1A",dutch:"Goedenavond",pron:"KHU-duh-NAH-font",english:"Good evening",turkish:"İyi akşamlar",example:"Goedenavond, ben je nog op locatie?"},
+  {block:"1A",dutch:"Dank je wel",pron:"DAHNK yuh vel",english:"Thank you",turkish:"Teşekkür ederim",example:"Dank je wel voor je hulp."},
+  {block:"1A",dutch:"Graag gedaan",pron:"KHRAKH khuh-DAHN",english:"You're welcome",turkish:"Rica ederim",example:"Graag gedaan, geen probleem."},
+  {block:"1A",dutch:"Alsjeblieft",pron:"AHL-shuh-bleeft",english:"Please / here you go",turkish:"Lütfen / buyur",example:"Alsjeblieft, hier is de sleutel."},
+  {block:"1A",dutch:"Sorry",pron:"SO-ri",english:"Sorry",turkish:"Üzgünüm / pardon",example:"Sorry, kun je dat herhalen?"},
+  {block:"1A",dutch:"Geen probleem",pron:"KHAYN pro-BLAYM",english:"No problem",turkish:"Sorun değil",example:"Geen probleem, ik regel het."},
+  {block:"1A",dutch:"Even",pron:"AY-vuh(n)",english:"For a moment",turkish:"Kısaca / bir an",example:"Heb je even tijd?"},
+  {block:"1A",dutch:"Natuurlijk",pron:"na-TUUR-luk",english:"Of course",turkish:"Tabii ki",example:"Natuurlijk, ik help je even."},
+  {block:"1A",dutch:"Misschien",pron:"mis-SKHEEN",english:"Maybe",turkish:"Belki",example:"Misschien lukt het morgen."},
+  {block:"1A",dutch:"Ja",pron:"yah",english:"Yes",turkish:"Evet",example:"Ja, dat klopt."},
+  {block:"1A",dutch:"Nee",pron:"nay",english:"No",turkish:"Hayır",example:"Nee, dat is nog niet klaar."},
+  {block:"1A",dutch:"Ik begrijp het",pron:"ik buh-KHRAYP het",english:"I understand",turkish:"Anladım",example:"Ja, ik begrijp het nu."},
+  {block:"1A",dutch:"Ik snap het niet",pron:"ik snap het neet",english:"I do not understand",turkish:"Anlamadım",example:"Sorry, ik snap het nog niet."},
+  {block:"1A",dutch:"Kun je dat herhalen?",pron:"kuhn yuh daht her-HAH-luh(n)",english:"Can you repeat that?",turkish:"Tekrar eder misin?",example:"Kun je dat herhalen, alsjeblieft?"},
+  {block:"1A",dutch:"Langzamer, alsjeblieft",pron:"LAHNG-zah-mur",english:"Slower, please",turkish:"Daha yavaş, lütfen",example:"Kun je iets langzamer praten?"},
+  {block:"1A",dutch:"Wat bedoel je?",pron:"vaht buh-DOOL yuh",english:"What do you mean?",turkish:"Ne demek istiyorsun?",example:"Wat bedoel je precies?"},
+  {block:"1A",dutch:"Precies",pron:"pray-SEES",english:"Exactly",turkish:"Aynen / tam olarak",example:"Ja, precies dat."},
+  {block:"1B",dutch:"Hoe gaat het?",pron:"hoo khaht het",english:"How are you?",turkish:"Nasılsın?",example:"Hoi, hoe gaat het vandaag?"},
+  {block:"1B",dutch:"Het gaat goed",pron:"het khaht khoot",english:"I'm doing well",turkish:"İyiyim",example:"Het gaat goed, dank je."},
+  {block:"1B",dutch:"Druk",pron:"drukh",english:"Busy",turkish:"Yoğun",example:"Het is vandaag erg druk."},
+  {block:"1B",dutch:"Rustig",pron:"RUS-tukh",english:"Quiet / calm",turkish:"Sakin",example:"Vandaag is het vrij rustig."},
+  {block:"1B",dutch:"Thuis",pron:"thuys",english:"At home",turkish:"Evde",example:"Ik werk vandaag thuis."},
+  {block:"1B",dutch:"Kantoor",pron:"kahn-TOOR",english:"Office",turkish:"Ofis",example:"Ik ben op kantoor."},
+  {block:"1B",dutch:"Werk",pron:"verk",english:"Work",turkish:"İş",example:"Ik heb veel werk vandaag."},
+  {block:"1B",dutch:"Pauze",pron:"POW-zuh",english:"Break",turkish:"Mola",example:"Ik neem nu even pauze."},
+  {block:"1B",dutch:"Koffie",pron:"KOH-fee",english:"Coffee",turkish:"Kahve",example:"Wil je koffie?"},
+  {block:"1B",dutch:"Water",pron:"WAH-tur",english:"Water",turkish:"Su",example:"Ik wil graag een glas water."},
+  {block:"1B",dutch:"Eten",pron:"AY-tuh(n)",english:"Food / to eat",turkish:"Yemek",example:"Heb je al gegeten?"},
+  {block:"1B",dutch:"Lunch",pron:"luhnch",english:"Lunch",turkish:"Öğle yemeği",example:"Zullen we samen lunchen?"},
+  {block:"1B",dutch:"Trein",pron:"trayn",english:"Train",turkish:"Tren",example:"Ik ga met de trein naar werk."},
+  {block:"1B",dutch:"Auto",pron:"OW-toh",english:"Car",turkish:"Araba",example:"Ik kom met de auto."},
+  {block:"1B",dutch:"Fiets",pron:"feets",english:"Bicycle",turkish:"Bisiklet",example:"Veel mensen gaan met de fiets."},
+  {block:"1B",dutch:"Regen",pron:"RAY-khun",english:"Rain",turkish:"Yağmur",example:"Vandaag is er veel regen."},
+  {block:"1B",dutch:"Wind",pron:"vint",english:"Wind",turkish:"Rüzgar",example:"Het is erg winderig vandaag."},
+  {block:"1B",dutch:"Koud",pron:"kowt",english:"Cold",turkish:"Soğuk",example:"Het is buiten koud."},
+  {block:"1B",dutch:"Warm",pron:"varm",english:"Warm",turkish:"Ilık / sıcak",example:"Vandaag is het best warm."},
+  {block:"1B",dutch:"Mooi",pron:"MOY",english:"Nice / beautiful",turkish:"Güzel",example:"Wat een mooie dag."},
+  {block:"1B",dutch:"Boodschappen",pron:"BOHT-skhap-uh(n)",english:"Groceries",turkish:"Market alışverişi",example:"Ik moet nog boodschappen doen."},
+  {block:"1B",dutch:"Supermarkt",pron:"SU-pur-markt",english:"Supermarket",turkish:"Süpermarket",example:"Ik ga na werk naar de supermarkt."},
+  {block:"1B",dutch:"Rekening",pron:"RAY-kuh-ning",english:"Bill / invoice",turkish:"Hesap / fatura",example:"Mag ik de rekening, alstublieft?"},
+  {block:"1B",dutch:"Pinnen",pron:"PI-nuh(n)",english:"To pay by card",turkish:"Kartla ödemek",example:"Kan ik hier pinnen?"},
+  {block:"1B",dutch:"Contant",pron:"kon-TAHNT",english:"Cash",turkish:"Nakit",example:"Ik heb geen contant geld bij me."},
+  {block:"1B",dutch:"Station",pron:"sta-TSYON",english:"Station",turkish:"İstasyon",example:"Ik ben bijna op het station."},
+  {block:"1B",dutch:"Vertraging",pron:"fur-TRAH-khing",english:"Delay",turkish:"Gecikme",example:"De trein heeft vertraging."},
+  {block:"1B",dutch:"Op tijd",pron:"op tayt",english:"On time",turkish:"Zamanında",example:"Ik probeer altijd op tijd te zijn."},
+  {block:"1B",dutch:"Te laat",pron:"tuh laht",english:"Too late",turkish:"Geç",example:"Sorry, ik ben iets te laat."},
+  {block:"1B",dutch:"Links",pron:"links",english:"Left",turkish:"Sol",example:"De supermarkt is links."},
+  {block:"1B",dutch:"Rechts",pron:"rekhts",english:"Right",turkish:"Sağ",example:"Het kantoor is aan de rechterkant."},
+  {block:"1B",dutch:"Rechtdoor",pron:"rekht-DOOR",english:"Straight ahead",turkish:"Dümdüz",example:"Ga rechtdoor en dan links."},
+  {block:"1B",dutch:"Dichtbij",pron:"DIKHT-bye",english:"Nearby",turkish:"Yakın",example:"Mijn huis is dichtbij het station."},
+  {block:"1B",dutch:"Ver",pron:"fer",english:"Far",turkish:"Uzak",example:"Dat is best ver van hier."},
+  {block:"1B",dutch:"Open",pron:"OH-puh(n)",english:"Open",turkish:"Açık",example:"Is de winkel nog open?"},
+  {block:"1B",dutch:"Gesloten",pron:"khuh-SLOH-tuh(n)",english:"Closed",turkish:"Kapalı",example:"Het loket is al gesloten."},
+  {block:"1B",dutch:"Weekend",pron:"wee-KENT",english:"Weekend",turkish:"Hafta sonu",example:"Wat ga je doen in het weekend?"},
+  {block:"1B",dutch:"Vrij",pron:"vray",english:"Free / off",turkish:"Boş / izinli",example:"Ik ben morgen vrij."},
+  {block:"1B",dutch:"Moe",pron:"moo",english:"Tired",turkish:"Yorgun",example:"Ik ben vandaag een beetje moe."},
+  {block:"1B",dutch:"Honger",pron:"HONG-ur",english:"Hungry",turkish:"Açlık",example:"Ik heb honger, laten we eten."},
+  {block:"2A",dutch:"Collega",pron:"ko-LE-kha",english:"Colleague",turkish:"Ekip arkadaşı",example:"Ik overleg met mijn collega."},
+  {block:"2A",dutch:"Team",pron:"teem",english:"Team",turkish:"Takım",example:"We lossen het samen als team op."},
+  {block:"2A",dutch:"Vergadering",pron:"fur-KHAH-duh-ring",english:"Meeting",turkish:"Toplantı",example:"Ik heb om tien uur een vergadering."},
+  {block:"2A",dutch:"Afspraak",pron:"AHF-sprahk",english:"Appointment",turkish:"Randevu",example:"We hebben morgen een afspraak."},
+  {block:"2A",dutch:"Planning",pron:"PLAH-ning",english:"Planning",turkish:"Planlama",example:"Volgens de planning starten we maandag."},
+  {block:"2A",dutch:"Vandaag",pron:"fan-DAKH",english:"Today",turkish:"Bugün",example:"Vandaag moet dit klaar zijn."},
+  {block:"2A",dutch:"Morgen",pron:"MOR-khun",english:"Tomorrow",turkish:"Yarın",example:"Morgen hebben we meer tijd."},
+  {block:"2A",dutch:"Gisteren",pron:"KHI-ster-un",english:"Yesterday",turkish:"Dün",example:"Gisteren was er een storing."},
+  {block:"2A",dutch:"Nu",pron:"nu",english:"Now",turkish:"Şimdi",example:"Ik kijk er nu naar."},
+  {block:"2A",dutch:"Later",pron:"LAH-tur",english:"Later",turkish:"Daha sonra",example:"Ik bel je later terug."},
+  {block:"2A",dutch:"Klaar",pron:"klahr",english:"Ready / finished",turkish:"Hazır / bitti",example:"De pomp is klaar voor gebruik."},
+  {block:"2A",dutch:"Nog niet",pron:"nokh neet",english:"Not yet",turkish:"Henüz değil",example:"Het is nog niet opgelost."},
+  {block:"2A",dutch:"Belangrijk",pron:"buh-LAHNG-rake",english:"Important",turkish:"Önemli",example:"Dit is belangrijk voor productie."},
+  {block:"2A",dutch:"Veilig",pron:"VAY-lukh",english:"Safe",turkish:"Güvenli",example:"Eerst kijken of het veilig is."},
+  {block:"2A",dutch:"Probleem",pron:"pro-BLAYM",english:"Problem",turkish:"Sorun",example:"Er is een probleem met de compressor."},
+  {block:"2A",dutch:"Oplossing",pron:"OP-lo-sing",english:"Solution",turkish:"Çözüm",example:"We zoeken een structurele oplossing."},
+  {block:"2A",dutch:"Helpen",pron:"HEL-puh(n)",english:"To help",turkish:"Yardım etmek",example:"Kun je mij even helpen?"},
+  {block:"2A",dutch:"Wachten",pron:"VAKH-tuh(n)",english:"To wait",turkish:"Beklemek",example:"Kun je even wachten?"},
+  {block:"2A",dutch:"Beginnen",pron:"buh-KHI-nuh(n)",english:"To start",turkish:"Başlamak",example:"We beginnen om acht uur."},
+  {block:"2A",dutch:"Stoppen",pron:"STO-puh(n)",english:"To stop",turkish:"Durdurmak",example:"We moeten het systeem stoppen."},
+  {block:"2B",dutch:"Taak",pron:"tahk",english:"Task",turkish:"Görev",example:"Wat is jouw taak vandaag?"},
+  {block:"2B",dutch:"Werkdag",pron:"VERK-dakh",english:"Workday",turkish:"İş günü",example:"Het was een lange werkdag."},
+  {block:"2B",dutch:"Dienst",pron:"deenst",english:"Shift / service",turkish:"Vardiya",example:"Wie heeft nu dienst?"},
+  {block:"2B",dutch:"Overleg",pron:"OH-vur-lekh",english:"Consultation",turkish:"Görüşme",example:"Laten we eerst even overleggen."},
+  {block:"2B",dutch:"Uitleg",pron:"OYT-lekh",english:"Explanation",turkish:"Açıklama",example:"Kun je wat meer uitleg geven?"},
+  {block:"2B",dutch:"Notitie",pron:"no-TEE-tsee",english:"Note",turkish:"Not",example:"Ik maak even een notitie."},
+  {block:"2B",dutch:"Actie",pron:"AK-tsee",english:"Action",turkish:"Aksiyon",example:"Welke actie nemen we vandaag?"},
+  {block:"2B",dutch:"Deadline",pron:"DED-line",english:"Deadline",turkish:"Son tarih",example:"Wat is de deadline hiervoor?"},
+  {block:"2B",dutch:"Prioriteit",pron:"pree-o-ree-TAYT",english:"Priority",turkish:"Öncelik",example:"Dit heeft hoge prioriteit."},
+  {block:"2B",dutch:"Beschikbaar",pron:"buh-SKHIK-bar",english:"Available",turkish:"Müsait",example:"Ben je vanmiddag beschikbaar?"},
+  {block:"2B",dutch:"Bezet",pron:"buh-ZET",english:"Busy / occupied",turkish:"Dolu / meşgul",example:"De vergaderruimte is bezet."},
+  {block:"2B",dutch:"Overnemen",pron:"OH-vur-nay-muh(n)",english:"Take over",turkish:"Devralmak",example:"Kun jij dit even overnemen?"},
+  {block:"2B",dutch:"Afmaken",pron:"AHF-mah-kuh(n)",english:"Finish",turkish:"Tamamlamak",example:"Ik wil dit vandaag afmaken."},
+  {block:"2B",dutch:"Bespreken",pron:"buh-SPRAY-kuh(n)",english:"Discuss",turkish:"Tartışmak",example:"We moeten dit morgen bespreken."},
+  {block:"2B",dutch:"Akkoord",pron:"ah-KOORD",english:"Agreed",turkish:"Kabul",example:"Ja, ik ben akkoord."},
+  {block:"2B",dutch:"Voorstel",pron:"VOOR-stel",english:"Proposal",turkish:"Öneri",example:"Ik heb een voorstel voor de planning."},
+  {block:"2B",dutch:"Verbetering",pron:"fur-BAY-tuh-ring",english:"Improvement",turkish:"İyileştirme",example:"We zien al een verbetering."},
+  {block:"2B",dutch:"Fout",pron:"fout",english:"Mistake / error",turkish:"Hata",example:"Er zit een fout in de planning."},
+  {block:"2B",dutch:"Oorzaak",pron:"OHR-zahk",english:"Cause",turkish:"Neden",example:"We zoeken nog naar de oorzaak."},
+  {block:"3A",dutch:"Leverancier",pron:"luh-vuh-ran-SEER",english:"Supplier / vendor",turkish:"Tedarikçi",example:"De leverancier komt morgen op site."},
+  {block:"3A",dutch:"Monteur",pron:"mon-TUR",english:"Technician",turkish:"Teknisyen",example:"De monteur controleert de unit."},
+  {block:"3A",dutch:"Aannemer",pron:"AHN-nay-mur",english:"Contractor",turkish:"Yüklenici",example:"De aannemer start maandag met het werk."},
+  {block:"3A",dutch:"Storing",pron:"STO-ring",english:"Breakdown / fault",turkish:"Arıza",example:"Er is een storing aan de installatie."},
+  {block:"3A",dutch:"Onderhoud",pron:"ON-der-howt",english:"Maintenance",turkish:"Bakım",example:"Het onderhoud is ingepland voor vrijdag."},
+  {block:"3A",dutch:"Reparatie",pron:"ray-pah-RAH-tsee",english:"Repair",turkish:"Tamir",example:"De reparatie duurt twee uur."},
+  {block:"3A",dutch:"Inspectie",pron:"in-SPEK-tsee",english:"Inspection",turkish:"İnspeksiyon",example:"Morgen hebben we een inspectie."},
+  {block:"3A",dutch:"Controle",pron:"kon-TRO-luh",english:"Check / control",turkish:"Kontrol",example:"Kun je de druk nog eens controleren?"},
+  {block:"3A",dutch:"Meting",pron:"MAY-ting",english:"Measurement",turkish:"Ölçüm",example:"De meting ziet er goed uit."},
+  {block:"3A",dutch:"Waarde",pron:"VAR-duh",english:"Value",turkish:"Değer",example:"De waarde is te hoog."},
+  {block:"3A",dutch:"Druk",pron:"drukh",english:"Pressure",turkish:"Basınç",example:"De druk is stabiel."},
+  {block:"3A",dutch:"Temperatuur",pron:"tem-puh-ruh-TUUR",english:"Temperature",turkish:"Sıcaklık",example:"De temperatuur is te laag."},
+  {block:"3A",dutch:"Debiet",pron:"deh-BEET",english:"Flow rate",turkish:"Debi",example:"Het debiet is vandaag lager."},
+  {block:"3A",dutch:"Lekkage",pron:"lek-KAH-zjuh",english:"Leakage",turkish:"Kaçak",example:"We hebben een kleine lekkage gevonden."},
+  {block:"3A",dutch:"Klep",pron:"klep",english:"Valve",turkish:"Vana",example:"Deze klep moet open blijven."},
+  {block:"3A",dutch:"Filter",pron:"FIL-tur",english:"Filter",turkish:"Filtre",example:"Het filter moet vervangen worden."},
+  {block:"3A",dutch:"Pomp",pron:"pomp",english:"Pump",turkish:"Pompa",example:"De pomp draait normaal."},
+  {block:"3A",dutch:"Leiding",pron:"LAY-ding",english:"Pipe / line",turkish:"Hat / boru",example:"Deze leiding gaat naar de tank."},
+  {block:"3A",dutch:"Tank",pron:"tahngk",english:"Tank",turkish:"Tank",example:"De tank is bijna leeg."},
+  {block:"3A",dutch:"Sensor",pron:"SEN-sor",english:"Sensor",turkish:"Sensör",example:"De sensor geeft een foutmelding."},
+  {block:"3B",dutch:"Installatie",pron:"in-sta-LAH-tsee",english:"Installation / system",turkish:"Tesisat / sistem",example:"De installatie draait stabiel."},
+  {block:"3B",dutch:"Uitval",pron:"OYT-fahl",english:"Outage / failure",turkish:"Kesinti",example:"Er was korte uitval van de voeding."},
+  {block:"3B",dutch:"Spanning",pron:"SPAH-ning",english:"Voltage / tension",turkish:"Voltaj / gerilim",example:"De spanning was even weg."},
+  {block:"3B",dutch:"Stroom",pron:"strohm",english:"Power / electricity",turkish:"Elektrik / akım",example:"De stroom moet erop blijven."},
+  {block:"3B",dutch:"Schakelaar",pron:"SKHA-kel-ar",english:"Switch",turkish:"Şalter",example:"Zet de schakelaar niet uit."},
+  {block:"3B",dutch:"Aansluiting",pron:"AHN-sloy-ting",english:"Connection",turkish:"Bağlantı",example:"De aansluiting moet worden gecontroleerd."},
+  {block:"3B",dutch:"Los",pron:"lohs",english:"Loose",turkish:"Gevşek",example:"Deze verbinding zit los."},
+  {block:"3B",dutch:"Vast",pron:"vahst",english:"Tight / fixed",turkish:"Sıkı / sabit",example:"Alles zit nu goed vast."},
+  {block:"3B",dutch:"Vervangen",pron:"fur-VANG-uh(n)",english:"Replace",turkish:"Değiştirmek",example:"We moeten het filter vervangen."},
+  {block:"3B",dutch:"Defect",pron:"day-FEKT",english:"Defective",turkish:"Arızalı",example:"De sensor is defect."},
+  {block:"3B",dutch:"In bedrijf",pron:"in buh-DRAYF",english:"In operation",turkish:"Devrede",example:"De pomp is weer in bedrijf."},
+  {block:"3B",dutch:"Buiten bedrijf",pron:"BOW-tuh(n) buh-DRAYF",english:"Out of operation",turkish:"Devre dışı",example:"De lijn is tijdelijk buiten bedrijf."},
+  {block:"3B",dutch:"Testen",pron:"TES-tuh(n)",english:"To test",turkish:"Test etmek",example:"We gaan de klep eerst testen."},
+  {block:"3B",dutch:"Meten",pron:"MAY-tuh(n)",english:"To measure",turkish:"Ölçmek",example:"We moeten eerst de druk meten."},
+  {block:"3B",dutch:"Afdichting",pron:"AHF-dikh-ting",english:"Seal / sealing",turkish:"Conta",example:"De afdichting lijkt beschadigd."},
+  {block:"3B",dutch:"Verstopping",pron:"fur-STOP-ing",english:"Blockage",turkish:"Tıkanıklık",example:"Misschien zit er een verstopping in de leiding."},
+  {block:"3B",dutch:"Alarm",pron:"ah-LARM",english:"Alarm",turkish:"Alarm",example:"We kregen vanochtend een alarm."},
+  {block:"3B",dutch:"Melding",pron:"MEL-ding",english:"Notification / signal",turkish:"Bildirim / uyarı",example:"Ik zag een melding op het scherm."},
+  {block:"3B",dutch:"Scherm",pron:"skherm",english:"Screen",turkish:"Ekran",example:"Op het scherm zie ik een fout."},
+  {block:"3B",dutch:"Herstarten",pron:"her-STAR-tuh(n)",english:"Restart",turkish:"Yeniden başlatmak",example:"We moeten de unit herstarten."},
+  {block:"4",dutch:"Kun je mij helpen?",pron:"kuhn yuh may HEL-puh(n)",english:"Can you help me?",turkish:"Bana yardım eder misin?",example:"Kun je mij hiermee helpen?"},
+  {block:"4",dutch:"Ik heb een vraag",pron:"ik hep uhn fraakh",english:"I have a question",turkish:"Bir sorum var",example:"Ik heb een vraag over de planning."},
+  {block:"4",dutch:"Ik kom zo terug",pron:"ik kom zo truhkh",english:"I'll be back soon",turkish:"Hemen döneceğim",example:"Ik kom zo terug met een update."},
+  {block:"4",dutch:"Ik stuur een mail",pron:"ik stuur uhn mayl",english:"I will send an email",turkish:"Bir mail atacağım",example:"Ik stuur straks een mail naar de leverancier."},
+  {block:"4",dutch:"We moeten dit checken",pron:"vuh moo-tuh(n) dit CHEK-un",english:"We need to check this",turkish:"Bunu kontrol etmemiz lazım",example:"We moeten dit vandaag nog checken."},
+  {block:"4",dutch:"Dat is prima",pron:"daht is PREE-mah",english:"That is fine",turkish:"Bu uygun / tamam",example:"Ja, dat is prima voor mij."},
+  {block:"4",dutch:"Dat werkt niet",pron:"daht verkt neet",english:"That does not work",turkish:"Bu çalışmıyor",example:"Op dit moment werkt dat niet."},
+  {block:"4",dutch:"Geen idee",pron:"khayn ee-DAY",english:"No idea",turkish:"Hiç fikrim yok",example:"Geen idee, ik ga het navragen."},
+  {block:"4",dutch:"Ik laat het je weten",pron:"ik laht het yuh VAY-tuh(n)",english:"I'll let you know",turkish:"Sana haber vereceğim",example:"Ik laat het je vanmiddag weten."},
+  {block:"4",dutch:"Tot straks",pron:"tot strahks",english:"See you later",turkish:"Birazdan görüşürüz",example:"Oké, tot straks."}
+];
+
+const DAILY_GOAL=10, SK='nl_fc_v4';
+let state={queue:[],known:[],learning:[],todayDone:0,todayKnown:0,todayLearn:0,lastDate:'',currentIdx:0,showAnswer:false,dayCount:1,notifHour:null};
+let selHour=20;
+
+function today(){return new Date().toISOString().slice(0,10);}
+function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+function save(){try{localStorage.setItem(SK,JSON.stringify(state));}catch(e){}}
+function load(){try{const d=localStorage.getItem(SK);if(d)state={...state,...JSON.parse(d)};}catch(e){}}
+
+function buildQueue(){
+  const t=today();
+  if(state.lastDate!==t){if(state.lastDate)state.dayCount=(state.dayCount||1)+1;state.todayDone=0;state.todayKnown=0;state.todayLearn=0;state.lastDate=t;}
+  const kS=new Set(state.known||[]),lS=new Set(state.learning||[]);
+  let lw=WORDS.filter(w=>lS.has(w.dutch)),nw=WORDS.filter(w=>!kS.has(w.dutch)&&!lS.has(w.dutch));
+  shuffle(lw);shuffle(nw);
+  state.queue=[...lw,...nw];
+  if(!state.queue.length)state.queue=shuffle([...WORDS]);
+  state.currentIdx=0;state.showAnswer=false;
+}
+
+function currentWord(){return state.queue[state.currentIdx%state.queue.length];}
+
+function animNum(id){const el=document.getElementById(id);el.classList.remove('pop');void el.offsetWidth;el.classList.add('pop');}
+
+function render(){
+  const w=currentWord();if(!w)return;
+  document.getElementById('card-block').textContent='BLK_'+w.block;
+  document.getElementById('card-counter').textContent=(state.currentIdx+1)+'/'+state.queue.length;
+  document.getElementById('card-dutch').textContent=w.dutch;
+  document.getElementById('card-pron').textContent=w.pron;
+  document.getElementById('card-english').textContent=w.english;
+  document.getElementById('card-turkish').textContent=w.turkish;
+  document.getElementById('card-example').textContent=w.example;
+  const ans=document.getElementById('card-answer'),hint=document.getElementById('tap-hint-el');
+  ans.style.display=state.showAnswer?'block':'none';
+  hint.style.display=state.showAnswer?'none':'flex';
+  const done=state.todayDone,pct=Math.min(100,Math.round(done/DAILY_GOAL*100));
+  document.getElementById('progress-fill').style.width=pct+'%';
+  document.getElementById('progress-label').textContent=done+' / '+DAILY_GOAL+' HEDEF';
+  document.getElementById('stat-done').textContent=done;
+  document.getElementById('stat-known').textContent=state.todayKnown;
+  document.getElementById('stat-learn').textContent=state.todayLearn;
+  document.getElementById('session-tag').textContent='GÜN_'+String(state.dayCount||1).padStart(2,'0');
+  document.getElementById('goal-banner').classList.toggle('show',done>=DAILY_GOAL);
+  document.getElementById('notif-btn').classList.toggle('active',state.notifHour!==null);
+}
+
+function swipe(dir){
+  if(!state.showAnswer){state.showAnswer=true;render();return;}
+  const w=currentWord();state.todayDone++;
+  if(dir==='right'){state.todayKnown++;if(!state.known.includes(w.dutch))state.known.push(w.dutch);state.learning=state.learning.filter(d=>d!==w.dutch);}
+  else{state.todayLearn++;if(!state.learning.includes(w.dutch))state.learning.push(w.dutch);}
+  animNum(dir==='right'?'stat-known':'stat-learn');
+  animNum('stat-done');
+  save();
+  if(state.todayDone>=DAILY_GOAL&&state.todayDone%DAILY_GOAL===0){showDone();return;}
+  state.currentIdx++;if(state.currentIdx>=state.queue.length)buildQueue();
+  state.showAnswer=false;render();
+}
+
+function showDone(){
+  document.getElementById('done-total').textContent=state.todayDone;
+  document.getElementById('done-known').textContent=state.todayKnown;
+  document.getElementById('done-learn').textContent=state.todayLearn;
+  document.getElementById('done-sub').textContent='BUGÜN '+state.todayDone+' KELİME İŞLENDİ.\nSİSTEM GÜNCELLENDİ.';
+  document.getElementById('screen-study').classList.remove('active');
+  document.getElementById('screen-done').classList.add('active');
+}
+function continueStudy(){
+  document.getElementById('screen-done').classList.remove('active');
+  document.getElementById('screen-study').classList.add('active');
+  state.currentIdx++;if(state.currentIdx>=state.queue.length)buildQueue();
+  state.showAnswer=false;render();
+}
+function resetDay(){state.todayDone=0;state.todayKnown=0;state.todayLearn=0;buildQueue();save();continueStudy();}
+
+// ── TOUCH ──
+const card=document.getElementById('flashcard');
+let startX=0,isDrag=false,curX=0;
+card.addEventListener('touchstart',e=>{startX=e.touches[0].clientX;isDrag=true;card.classList.add('dragging');},{passive:true});
+card.addEventListener('touchmove',e=>{
+  if(!isDrag)return;curX=e.touches[0].clientX-startX;
+  card.style.transform='translateX('+curX+'px) rotate('+(curX*0.025)+'deg)';
+  const ovR=document.getElementById('overlay-right'),ovL=document.getElementById('overlay-left');
+  if(curX>30){ovR.style.opacity=Math.min(1,(curX-30)/60);ovL.style.opacity=0;}
+  else if(curX<-30){ovL.style.opacity=Math.min(1,(-curX-30)/60);ovR.style.opacity=0;}
+  else{ovR.style.opacity=0;ovL.style.opacity=0;}
+},{passive:true});
+card.addEventListener('touchend',()=>{
+  isDrag=false;card.classList.remove('dragging');card.style.transform='';
+  document.getElementById('overlay-right').style.opacity=0;document.getElementById('overlay-left').style.opacity=0;
+  if(Math.abs(curX)>80)swipe(curX>0?'right':'left');
+  else if(Math.abs(curX)<10&&!state.showAnswer){state.showAnswer=true;render();}
+  curX=0;
+});
+card.addEventListener('click',()=>{if(!state.showAnswer){state.showAnswer=true;render();}});
+
+// ── NOTIFICATIONS ──
+const NOTIF_HOURS=[7,8,9,10,12,13,17,18,19,20,21,22];
+
+function buildTimeGrid(){
+  const grid=document.getElementById('time-grid');
+  grid.innerHTML='';
+  NOTIF_HOURS.forEach(h=>{
+    const b=document.createElement('div');
+    b.className='time-btn'+(h===selHour?' sel':'');
+    b.textContent=h+':00';
+    b.onclick=()=>{selHour=h;buildTimeGrid();};
+    grid.appendChild(b);
+  });
+}
+
+function openNotifModal(){
+  selHour=state.notifHour||20;
+  buildTimeGrid();
+  document.getElementById('modal-bg').classList.add('show');
+}
+function closeNotifModal(){document.getElementById('modal-bg').classList.remove('show');}
+
+async function saveNotif(){
+  if(!('Notification' in window)){alert('Bu tarayıcı bildirim desteklemiyor.');closeNotifModal();return;}
+  const perm=await Notification.requestPermission();
+  if(perm==='granted'){
+    state.notifHour=selHour;save();
+    scheduleNotif();
+    closeNotifModal();
+  } else {
+    alert('Bildirim izni verilmedi. iPhone Ayarlar → Safari → Bildirimler bölümünden izin verebilirsin.');
+    closeNotifModal();
+  }
+}
+
+function scheduleNotif(){
+  if(state.notifHour===null)return;
+  if(!('Notification' in window)||Notification.permission!=='granted')return;
+  const now=new Date(), target=new Date();
+  target.setHours(state.notifHour,0,0,0);
+  if(target<=now)target.setDate(target.getDate()+1);
+  const ms=target-now;
+  clearTimeout(window._notifTimer);
+  window._notifTimer=setTimeout(()=>{
+    if(state.todayDone<DAILY_GOAL){
+      new Notification('🇳🇱 Nederlands zamanı!',{
+        body:'Bugün henüz '+state.todayDone+'/'+DAILY_GOAL+' kelime. Hadi başla!',
+        icon:'https://olcayozcan.github.io/Hollandaca/icon.png'
+      });
+    }
+    scheduleNotif();
+  },ms);
+}
+
+// ── INIT ──
+if('serviceWorker' in navigator)navigator.serviceWorker.register('./sw.js').catch(()=>{});
+load();buildQueue();render();scheduleNotif();
+</script>
+</body>
+</html>
