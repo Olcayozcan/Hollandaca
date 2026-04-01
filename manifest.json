@@ -1,0 +1,11 @@
+{
+  "name": "Hollandaca Flashcard",
+  "short_name": "Nederlands",
+  "description": "Hollandaca kelime kartları",
+  "start_url": "/Hollandaca/",
+  "display": "standalone",
+  "background_color": "#0a0a0a",
+  "theme_color": "#0a0a0a",
+  "orientation": "portrait",
+  "icons": []
+}
