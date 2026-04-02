@@ -17,6 +17,17 @@ Reminder notifications at a time you set
 Works offline
 
 Word blocks
-BlockTopic1AGreetings and basics1BEveryday life2ACore work language2BWorkplace conversations3AVendor and technical communication3BTechnical field vocabulary4Useful A2 phrases5ANumbers and time5BHealth6AHome and city
+
+Block Topic 
+1A Greetings and basics
+1BEveryday life
+2ACore work language
+2BWorkplace conversations
+3AVendor and technical communication
+3BTechnical field vocabulary
+4Useful A2 phrases
+5ANumbers and time
+5BHealth
+6AHome and city
 
 Günlük Hollandaca pratik için yaptığım kişisel uygulama. Kurulum gerektirmez, telefonda ikon olarak çalışır.
